@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadisticas</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(80deg, #2b6777, #1a3b57);
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            margin: auto;
+        }
+        .charts-section {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .chart {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .info-cards {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .card-info {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="charts-section">
+            <div class="chart">
+                <canvas id="locationPieChart"></canvas>
+            </div>
+
+            <div class="chart">
+                <canvas id="valueHistogram"></canvas>
+            </div>
+        </div>
+
+        <div class="info-cards">
+            <div class="card-info">
+                <h2 style="text-align: center"><b>301</b></h2>
+                <p style="text-align: center">Personas analizadas</p>
+            </div>
+            <div class="card-info">
+                <h2 style="text-align: center"><b>5</b></h2>
+                <p>Promedio de conexiones por persona</p>
+            </div>
+            <div class="card-info">
+                <h5 style="text-align: center">Total de personas por sector/industria</h5>
+                <p><b>Agricultura: </b> 35 </p>
+                <p><b>Educación: </b> 52 </p>
+                <p><b>Energía: </b> 32 </p>
+                <p><b>Finanzas: </b> 40 </p>
+                <p><b>Salud: </b> 33 </p>
+                <p><b>Tecnología: </b> 33 </p>
+                <p><b>Transporte: </b> 33 </p>
+                <p><b>Turismo: </b> 42 </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch('data_nodes.json')
+        .then(response => response.json())
+        .then(data => {
+            const locationCounts = {};
+            const valueCounts = {};
+
+            data.nodes.forEach(node => {
+                locationCounts[node.location] = (locationCounts[node.location] || 0) + 1;
+                valueCounts[node.val] = (valueCounts[node.val] || 0) + 1;
+            });
+
+            const pieData = {
+                labels: Object.keys(locationCounts),
+                datasets: [{
+                    label: 'Number of People per Location',
+                    data: Object.values(locationCounts),
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#AA64F9', '#57D769'],
+                }]
+            };
+            const pieCtx = document.getElementById('locationPieChart').getContext('2d');
+            new Chart(pieCtx, {
+                type: 'pie',
+                data: pieData
+            });
+
+            const histogramData = {
+                labels: Object.keys(valueCounts),
+                datasets: [{
+                    label: 'Frequency of People by Value',
+                    data: Object.values(valueCounts),
+                    backgroundColor: '#4A90E2'
+                }]
+            };
+            const histogramCtx = document.getElementById('valueHistogram').getContext('2d');
+            new Chart(histogramCtx, {
+                type: 'bar',
+                data: histogramData,
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: 'Value' } },
+                        y: { title: { display: true, text: 'Frequency' } }
+                    }
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vinks Mujeres</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://unpkg.com/3d-force-graph"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    .header {
+    background-color: #f0f0f0;
+    padding: 10px;
+    text-align: center;
+    color: #333;
+    font-size: 2.0em;
+    font-family: 'Georgia', serif;
+    font-weight: 500;
+    border-bottom: 1px solid #ccc;
+  }
+    .container {
+      display: flex;
+      height: calc(100vh - 60px);
+      width: 100vw;
+      margin: 0;
+    }
+    .sidebar {
+      width: 30%;
+      background-color: #2b6777;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .sidebar img {
+      width: 100%;
+      height: auto;
+      border-radius: 50%;
+      margin-bottom: 20px;
+      transition: transform 0.3s ease;
+    }
+    .profile-info {
+      text-align: center;
+      color: white;
+      font-family: 'Georgia', serif;
+    }
+    .profile-info h3 {
+      margin-top: 10px;
+      font-size: 1.5em;
+    }
+    .content {
+      width: 70%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff;
+    }
+    .graph-container {
+      width: 100%;
+      height: 100%;
+    }
+    #highlight-button {
+    background-color: #2b6777; 
+    color: white; 
+    border: none; 
+  }
+
+  #highlight-button:hover {
+    background-color: #255e6d; /* Darker blue for hover effect */
+  }
+  </style>
+</head>
+<body>
+
+<div class="header">
+    Red de Mujeres
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <img id="profile-picture" src="photo2.jpg" alt="Profile Picture">
+    <h3 id="profile-name" class="profile-info">Andrea Blanca Valbuena</h3>
+    <div class="card mb-4">
+      <div class="card-body">
+        <p class="card-text"><b>Empresa:</b><span id="profile-company"> Escolano, Corbacho </span></p>
+        <p class="card-text"><b>Sector:</b><span id="profile-sector"> Educación </span></p>
+        <p class="card-text"><b>Ubicacion:</b><span id="profile-location"> Bogota, Colombia </span></p>
+        <p class="card-text"><b>Interesada en:</b><span id="profile-interes"> 7 </span></p>
+        <button id='highlight-button' class="btn btn-primary">Ver relaciones</button>
+        <button id="stats-button" onclick="window.location.href='stadistics_chat.html'" class="btn btn-primary" style="padding: 5px;">Ver estadísticas</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="content">
+    <div id="graph-container" class="graph-container"></div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    fetch('data_nodes.json')
+      .then(response => response.json())
+      .then(data => {
+        const graphContainer = document.getElementById('graph-container');
+        const profilePicture = document.getElementById('profile-picture');
+        const profileName = document.getElementById('profile-name');
+        const profileCompany = document.getElementById('profile-company');
+        const profileSector = document.getElementById('profile-sector');
+        const profileLocation = document.getElementById('profile-location');
+        const profileInteres = document.getElementById('profile-interes');
+        
+        let selectedNode = null;
+
+        const Graph = ForceGraph3D()(graphContainer)
+          .graphData(data)
+          .nodeId('id')
+          .nodeLabel(node => `${node.label}`)
+          .nodeAutoColorBy('group')
+          .nodeVal('val')
+          .linkSource('source')
+          .linkTarget('target')
+          .linkColor(() => '#888')
+          .backgroundColor('#c8d8e4');
+
+        data.nodes.forEach(node => node.originalColor = node.color);
+        data.links.forEach(link => link.originalColor = link.color);
+
+        function updateSidebar(node) {
+          profilePicture.src = node.image || 'photo2.jpg';
+          profileName.textContent = node.label;
+          profileCompany.textContent = node.company || 'N/A';
+          profileSector.textContent = node.sector || 'N/A';
+          profileLocation.textContent = node.location || 'N/A';
+          profileInteres.textContent = node.val || 'N/A';
+        }
+
+        Graph.onNodeClick(node => {
+          selectedNode = node;
+          updateSidebar(node);
+        });
+/*
+        const highlightButton = document.getElementById('highlight-button');
+        if (highlightButton) {
+          highlightButton.addEventListener('click', () => {
+            highlightNode(highlightedNodeId);
+          });
+        }
+*/
+        function highlightNode(nodeId) {
+          const { nodes, links } = Graph.graphData();
+
+          // Update colors for the highlighted node and its links
+          nodes.forEach(node => {
+            node.color = (node.id === nodeId || links.some(link => (link.source.id === nodeId || link.target.id === nodeId) && (link.source.id === node.id || link.target.id === node.id))) 
+              ? 'black' 
+              : node.originalColor || '#aaa';
+          });
+
+          links.forEach(link => {
+            link.color = (link.source.id === nodeId || link.target.id === nodeId) ? 'black' : link.originalColor || '#888';
+          });
+
+          // Update the graph with new styles
+          Graph.nodeColor(node => node.color)
+               .linkColor(link => link.color);
+
+          // Position the camera to focus on the highlighted node
+          const highlightedNode = nodes.find(node => node.id === nodeId);
+          if (highlightedNode) {
+            Graph.cameraPosition(
+              { x: highlightedNode.x, y: highlightedNode.y, z: highlightedNode.z + 300 }, // New camera position
+              { x: highlightedNode.x, y: highlightedNode.y, z: highlightedNode.z },       // Look-at position
+              3000  
+            );
+          }
+        }
+        document.getElementById('highlight-button').addEventListener('click', () => {
+          if (selectedNode) {
+            highlightNode(selectedNode.id);
+          } else {
+            alert('Please select a node first.');
+          }
+        });
+      });
+  });
+</script>
+
+</body>
+</html>
